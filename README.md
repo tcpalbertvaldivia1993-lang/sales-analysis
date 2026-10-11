@@ -1,95 +1,196 @@
-# Análisis de ventas
+# Análisis de ventas con Python y SQL
 
-Proyecto de análisis de ventas con Python, pandas, DuckDB, SQL y Plotly. El CSV incluido contiene datos ficticios de demostración, no datos personales reales.
+Proyecto de portafolio que procesa un archivo CSV de ventas, valida sus datos y genera métricas y agrupaciones con Python, pandas y DuckDB. También exporta un gráfico interactivo de ingresos netos mensuales como archivo HTML.
 
-## Flujo activo
+## Objetivo
 
-El punto de entrada es `main.py`. Este flujo carga y valida el CSV con pandas, registra los datos en DuckDB, ejecuta las consultas SQL de `sql/duckdb/` y crea un gráfico interactivo con Plotly.
+El proyecto muestra un flujo de análisis desde un CSV hasta resultados resumidos: validar los datos de entrada, calcular métricas de ventas y explorar resultados por región, producto y cliente.
+
+## Tecnologías
+
+- **Python:** punto de entrada, validación y coordinación del análisis.
+- **pandas:** lectura y validación tabular de datos, y análisis exploratorio.
+- **DuckDB:** ejecución de consultas analíticas sobre los datos cargados en memoria.
+- **SQL:** definición de las consultas de resumen, ventas mensuales y ranking de productos.
+- **Plotly:** generación del gráfico interactivo en HTML.
+- **pytest:** pruebas de validación, cálculos, consultas y salida HTML.
+
+Las dependencias directas están declaradas en `requirements.txt`; `requirements-lock.txt` contiene versiones fijadas para reproducir el entorno congelado del proyecto.
+
+El código requiere Python 3.10 o superior por la sintaxis de anotaciones de tipos utilizada. Para instalar las versiones exactas de `requirements-lock.txt`, se requiere Python 3.11 o superior. El entorno fijado se verificó con Python 3.14.4, pero esa versión concreta no es obligatoria.
+
+## Funcionalidades
+
+El flujo principal se ejecuta desde `main.py` y:
+
+1. Lee un CSV y valida sus columnas, fechas, cantidades, precios y descuentos.
+2. Calcula los ingresos netos, el número de pedidos y el ticket promedio.
+3. Agrupa ingresos por región y por producto, y presenta los cinco clientes con mayor gasto neto.
+4. Calcula ventas por mes y genera un ranking de productos por unidades e ingresos.
+5. Exporta un gráfico interactivo de ingresos netos mensuales.
+
+El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios nombres, los presenta juntos y marca la inconsistencia.
+
+## Estructura del proyecto
 
 ```text
-main.py
-src/sales_analysis/
-  validation.py          # Lectura y validación de CSV con pandas
-  duckdb_analysis.py     # Métricas, consultas DuckDB y resultados
-  visualization.py      # Gráfico HTML interactivo con Plotly
-sql/duckdb/
-  summary.sql            # Ingresos, pedidos y ticket promedio
-  monthly_sales.sql      # Ingresos mensuales
-  top_products.sql       # Ranking agrupado por product_id
-data/raw/ventas_demo.csv # CSV ficticio de ejemplo
-reports/                 # Gráficos generados, ignorados por Git
-tests/                   # Pruebas pytest
+.
+├── main.py
+├── requirements.txt
+├── requirements-lock.txt
+├── data/
+│   ├── raw/                  # CSV de entrada local; no se distribuye en el repositorio
+│   └── processed/            # reservado para datos procesados
+├── reports/                  # destino de los informes HTML generados
+├── sql/
+│   ├── duckdb/               # consultas del flujo principal
+│   ├── queries/              # consultas del prototipo SQLite
+│   └── schema.sql            # esquema del prototipo SQLite
+├── src/sales_analysis/
+│   ├── validation.py         # lectura y validación del CSV
+│   ├── exploratory.py        # agrupaciones con pandas
+│   ├── duckdb_analysis.py    # métricas y consultas DuckDB
+│   ├── visualization.py      # gráfico HTML con Plotly
+│   ├── database.py           # conexión y carga para el prototipo SQLite
+│   ├── cli.py                # comandos del prototipo SQLite
+│   └── reporting.py          # resumen CSV del prototipo SQLite
+└── tests/
+    ├── test_main.py
+    ├── test_sales_analysis.py
+    └── test_exploratory.py
 ```
 
-El ranking agrupa por `product_id`; si un identificador tiene varios nombres, los muestra juntos y marca la inconsistencia.
+Los módulos SQLite se conservan como prototipo separado. No forman parte del flujo ejecutado por `main.py`.
 
-## Prototipo SQLite conservado
+## Requisitos e instalación
 
-Los siguientes archivos pertenecen a un prototipo separado que no utiliza `main.py`. Se conservan como referencia y no se eliminan:
+Se recomienda Python 3.11 o superior. `requirements-lock.txt` fija pandas 3.0.6, que requiere como mínimo Python 3.11. `requirements.txt` declara rangos de dependencias, no una versión concreta de Python.
 
-```text
-src/sales_analysis/database.py   # Carga y conexión SQLite
-src/sales_analysis/cli.py        # Comandos load/report para SQLite
-src/sales_analysis/reporting.py  # Resumen CSV para SQLite
-sql/schema.sql                   # Esquema SQLite
-sql/queries/                     # Consultas SQL del prototipo SQLite
-```
+### Windows (PowerShell)
 
-## Requisitos y dependencias
-
-- Python 3.14.4 es la versión usada para verificar este proyecto y corresponde al entorno congelado en `requirements-lock.txt`.
-- `requirements.txt` declara los rangos compatibles de las dependencias directas: pandas, DuckDB, Plotly y pytest.
-- `requirements-lock.txt` fija las versiones exactas instaladas, incluidas las dependencias transitivas, para reproducir ese entorno.
-
-No se requieren paquetes adicionales para el flujo SQLite, pero sí las dependencias de `requirements.txt` para ejecutar `main.py` y las pruebas.
-
-## Instalación en Windows con VS Code
-
-Abre la carpeta del proyecto en VS Code y usa una terminal PowerShell en la raíz:
+Desde la carpeta raíz del proyecto:
 
 ```powershell
-py -3.14 -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-lock.txt
 ```
 
-Si ya creaste `.venv`, omite el primer comando. Para instalar versiones dentro de los rangos compatibles en vez de las versiones fijadas, usa `python -m pip install -r requirements.txt`.
+Si ya existe el entorno virtual, omite la primera línea. Para instalar versiones dentro de los rangos declarados en lugar de las versiones fijadas, puedes usar:
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+### Linux o WSL
+
+Desde la carpeta raíz del proyecto:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-lock.txt
+```
+
+También puedes instalar con los rangos de `requirements.txt`:
+
+```bash
+python -m pip install -r requirements.txt
+```
 
 ## Ejecutar el análisis
 
-Con el entorno virtual activado:
+El programa espera un CSV con las columnas requeridas. El repositorio no distribuye `data/raw/ventas_demo.csv`, así que indica la ruta a un CSV disponible localmente.
+
+En Windows:
 
 ```powershell
-python main.py
+python main.py --csv "C:\ruta\ventas.csv"
 ```
 
-Por defecto se usa `data/raw/ventas_demo.csv`. El programa imprime las métricas y guarda el gráfico interactivo en `reports/analisis_ventas_dashboard.html`. La carpeta `reports/` se crea automáticamente si aún no existe. Para visualizarlo, abre `reports/analisis_ventas_dashboard.html` en un navegador.
+En Linux o WSL:
 
-Para seleccionar otro CSV y una ruta de salida:
+```bash
+python main.py --csv "/ruta/ventas.csv"
+```
+
+Si el CSV está en `data/raw/ventas_demo.csv`, también puedes ejecutar `python main.py` sin indicar `--csv`. Si ese archivo predeterminado no existe, el programa registra un error indicando que no encontró el CSV y termina con código 1. No descarga ni crea datos automáticamente.
+
+El destino predeterminado del gráfico es:
+
+```text
+reports/analisis_ventas_dashboard.html
+```
+
+La carpeta `reports/` se crea si no existe. Puedes cambiar el destino con `--output`, siempre que termine en `.html` y no coincida con la ruta del CSV.
+
+En Windows:
 
 ```powershell
-python main.py --csv "C:\datos\ventas.csv" --output reports\mi_dashboard.html
+python main.py --csv "C:\ruta\ventas.csv" --output "reports\mi_dashboard.html"
 ```
 
-La opción `--output` permite elegir otro destino. La salida debe tener extensión `.html` y no puede apuntar al mismo archivo que el CSV de entrada.
+En Linux o WSL:
+
+```bash
+python main.py --csv "/ruta/ventas.csv" --output "reports/mi_dashboard.html"
+```
+
+Para abrir el gráfico, abre el HTML generado en un navegador. En PowerShell puedes usar:
+
+```powershell
+Start-Process .\reports\analisis_ventas_dashboard.html
+```
+
+En Linux:
+
+```bash
+xdg-open reports/analisis_ventas_dashboard.html
+```
+
+En WSL con integración de Windows:
+
+```bash
+explorer.exe "$(wslpath -w reports/analisis_ventas_dashboard.html)"
+```
 
 ## Ejecutar las pruebas
 
-Desde la raíz del proyecto y con el entorno activado:
+Con el entorno virtual activado y desde la raíz del proyecto:
 
-```powershell
+```bash
 python -m pytest -v
 ```
 
-Las pruebas cubren validación de datos, límites numéricos y monetarios, consultas DuckDB, ranking, rutas de salida y generación del HTML.
+Las pruebas existentes comprueban la validación de datos y límites numéricos, las métricas y agrupaciones, las consultas y el ranking de DuckDB, y las condiciones de salida y generación del HTML.
 
-## Formato del CSV y métricas
+## Resultados y dashboard
 
-El archivo debe contener las columnas `order_id,order_date,customer_id,customer_name,region,product_id,product_name,category,quantity,unit_price,discount_pct`. Cada fila representa una línea de pedido; un pedido puede incluir varias filas.
+Al terminar, el programa imprime en la terminal métricas generales, ingresos por región y producto, los cinco clientes con mayor gasto y el ranking de productos. También guarda un gráfico de líneas interactivo con los ingresos netos por mes.
 
-- `quantity`: entero positivo dentro del rango `int64`.
-- `unit_price`: importe no negativo compatible con `DECIMAL(18, 6)`.
-- `discount_pct`: proporción entre 0 y 1, compatible con `DECIMAL(9, 6)`; por ejemplo, `0.10` equivale a 10%.
-- Las columnas requeridas no pueden estar vacías y `order_date` debe ser una fecha válida.
+El dashboard contiene ese gráfico mensual; no es un panel con filtros ni incluye las tablas impresas en la terminal. El archivo se genera localmente y no se incluye en el repositorio. No se presentan cifras ni capturas en este README.
 
-Los ingresos netos se calculan como cantidad × precio unitario × (1 − descuento). El número de ventas es el número de pedidos distintos y el ticket promedio es el ingreso neto dividido por esos pedidos. No se incluyen impuestos, envío ni devoluciones.
+## Formato de entrada
+
+Cada fila representa una línea de pedido. Un pedido puede aparecer en varias filas. El CSV debe incluir:
+
+```text
+order_id,order_date,customer_id,customer_name,region,product_id,product_name,category,quantity,unit_price,discount_pct
+```
+
+Las cantidades deben ser enteros positivos; los precios, importes no negativos; y el descuento, una proporción entre `0` y `1` (por ejemplo, `0.10` equivale a 10 %). Las fechas deben ser válidas y las columnas requeridas no pueden estar vacías.
+
+Los ingresos netos se calculan como cantidad × precio unitario × (1 − descuento). El análisis no incluye impuestos, envío ni devoluciones.
+
+## Limitaciones y mejoras futuras
+
+- El análisis depende de que el CSV tenga las columnas y los tipos de datos esperados.
+- El gráfico actual muestra ingresos mensuales y no permite filtrar ni explorar los grupos desde el navegador.
+- No se modelan impuestos, envío, devoluciones ni otros ajustes contables.
+- Los módulos SQLite son un prototipo independiente y no están integrados en el flujo principal.
+
+Como mejoras futuras se podrían incorporar filtros al dashboard, comparar periodos y categorías, y ampliar el conjunto de casos de prueba con más archivos de entrada.
+
+## Datos de demostración
+
+Los datos de demostración son ilustrativos y no deben considerarse datos reales ni representar resultados de un negocio. El CSV local `data/raw/ventas_demo.csv` no se distribuye en este repositorio.
