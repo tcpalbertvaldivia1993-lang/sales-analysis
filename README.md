@@ -28,6 +28,7 @@ El flujo principal se ejecuta desde `main.py` y:
 3. Agrupa ingresos por región y por producto, y presenta los cinco clientes con mayor gasto neto.
 4. Calcula ventas por mes y genera un ranking de productos por unidades e ingresos.
 5. Exporta un gráfico interactivo de ingresos netos mensuales.
+6. Exporta a CSV los ingresos por región, las métricas por producto y los cinco clientes con mayor gasto neto.
 
 El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios nombres, los presenta juntos y marca la inconsistencia.
 
@@ -41,7 +42,7 @@ El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios
 ├── data/
 │   ├── raw/                  # CSV de entrada local; no se distribuye en el repositorio
 │   └── processed/            # reservado para datos procesados
-├── reports/                  # destino de los informes HTML generados
+├── reports/                  # destino de los informes HTML y CSV generados
 ├── sql/
 │   ├── duckdb/               # consultas del flujo principal
 │   ├── queries/              # consultas del prototipo SQLite
@@ -49,6 +50,7 @@ El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios
 ├── src/sales_analysis/
 │   ├── validation.py         # lectura y validación del CSV
 │   ├── exploratory.py        # agrupaciones con pandas
+│   ├── exporting.py          # exportación de resultados exploratorios a CSV
 │   ├── duckdb_analysis.py    # métricas y consultas DuckDB
 │   ├── visualization.py      # gráfico HTML con Plotly
 │   ├── database.py           # conexión y carga para el prototipo SQLite
@@ -123,6 +125,13 @@ reports/analisis_ventas_dashboard.html
 ```
 
 La carpeta `reports/` se crea si no existe. Puedes cambiar el destino con `--output`, siempre que termine en `.html` y no coincida con la ruta del CSV.
+El programa guarda también estos tres archivos CSV en el mismo directorio que el HTML:
+
+- `ventas_por_region.csv`: ingresos netos agrupados por región.
+- `metricas_por_producto.csv`: nombres, unidades vendidas e ingresos netos por producto, con una marca de conflictos de nombres.
+- `top_5_clientes.csv`: hasta cinco clientes con mayor gasto neto.
+
+Si `--output` apunta a otro directorio, los CSV se guardan junto al HTML en ese directorio.
 
 En Windows:
 
@@ -162,13 +171,13 @@ Con el entorno virtual activado y desde la raíz del proyecto:
 python -m pytest -v
 ```
 
-Las pruebas existentes comprueban la validación de datos y límites numéricos, las métricas y agrupaciones, las consultas y el ranking de DuckDB, y las condiciones de salida y generación del HTML.
+Las pruebas comprueban la validación de datos y límites numéricos, las métricas y agrupaciones, las consultas y el ranking de DuckDB, y las condiciones de salida, generación del HTML y exportación de los CSV.
 
 ## Resultados y dashboard
 
-Al terminar, el programa imprime en la terminal métricas generales, ingresos por región y producto, los cinco clientes con mayor gasto y el ranking de productos. También guarda un gráfico de líneas interactivo con los ingresos netos por mes.
+Al terminar, el programa imprime en la terminal métricas generales, ingresos por región y producto, los cinco clientes con mayor gasto y el ranking de productos. También guarda un gráfico de líneas interactivo con los ingresos netos por mes y tres tablas CSV con los principales resultados exploratorios.
 
-El dashboard contiene ese gráfico mensual; no es un panel con filtros ni incluye las tablas impresas en la terminal. El archivo se genera localmente y no se incluye en el repositorio. No se presentan cifras ni capturas en este README.
+El dashboard contiene ese gráfico mensual; no es un panel con filtros ni incluye las tablas impresas en la terminal. El HTML y los CSV se generan localmente dentro de `reports/` (o junto al HTML si se indica otro destino) y no se incluyen en el repositorio. No se presentan cifras ni capturas en este README.
 
 ## Formato de entrada
 

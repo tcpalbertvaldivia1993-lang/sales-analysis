@@ -9,6 +9,7 @@ import duckdb
 import pandas as pd
 
 from src.sales_analysis.duckdb_analysis import analyze_sales
+from src.sales_analysis.exporting import exploratory_csv_paths, save_exploratory_csvs
 from src.sales_analysis.exploratory import analyze_exploratory_sales
 from src.sales_analysis.validation import load_and_validate_csv
 from src.sales_analysis.visualization import save_revenue_chart
@@ -17,7 +18,7 @@ ROOT = Path(__file__).resolve().parent
 
 
 def validate_output_paths(csv_path: Path, output_path: Path) -> None:
-    """Rechaza destinos que puedan reemplazar el CSV o no sean archivos HTML."""
+    """Rechaza destinos inválidos o que puedan reemplazar el CSV de entrada."""
     resolved_csv = Path(csv_path).resolve()
     resolved_output = Path(output_path).resolve()
 
@@ -28,6 +29,13 @@ def validate_output_paths(csv_path: Path, output_path: Path) -> None:
         )
     if resolved_output.suffix.lower() != ".html":
         raise ValueError("El archivo de salida debe tener la extensión .html.")
+    for csv_output in exploratory_csv_paths(resolved_output.parent).values():
+        resolved_csv_output = Path(csv_output).resolve()
+        if os.path.normcase(str(resolved_csv)) == os.path.normcase(str(resolved_csv_output)):
+            raise ValueError(
+                "Una ruta CSV de salida coincide con el CSV de entrada; "
+                "elige otro archivo para evitar sobrescribirlo."
+            )
 
 
 def main() -> int:
@@ -51,6 +59,7 @@ def main() -> int:
         exploratory = analyze_exploratory_sales(sales)
         results = analyze_sales(sales)
         save_revenue_chart(results.monthly_sales, args.output)
+        save_exploratory_csvs(exploratory, args.output.parent)
     except (OSError, ValueError, duckdb.Error, pd.errors.ParserError) as exc:
         logger.error("No se pudo completar el análisis: %s", exc)
         return 1
@@ -69,6 +78,7 @@ def main() -> int:
     print("\nProductos más vendidos (unidades):")
     print(results.top_products.to_string(index=False))
     logger.info("Gráfico interactivo guardado en %s", args.output)
+    logger.info("Tablas CSV guardadas en %s", args.output.parent)
     return 0
 
 
