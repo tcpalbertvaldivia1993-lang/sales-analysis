@@ -12,7 +12,7 @@ from src.sales_analysis.duckdb_analysis import analyze_sales
 from src.sales_analysis.exporting import exploratory_csv_paths, save_exploratory_csvs
 from src.sales_analysis.exploratory import analyze_exploratory_sales
 from src.sales_analysis.validation import load_and_validate_csv
-from src.sales_analysis.visualization import save_revenue_chart
+from src.sales_analysis.visualization import save_sales_dashboard
 
 ROOT = Path(__file__).resolve().parent
 
@@ -58,7 +58,7 @@ def main() -> int:
         sales = load_and_validate_csv(args.csv)
         exploratory = analyze_exploratory_sales(sales)
         results = analyze_sales(sales)
-        save_revenue_chart(results.monthly_sales, args.output)
+        save_sales_dashboard(exploratory, args.output)
         save_exploratory_csvs(exploratory, args.output.parent)
     except (OSError, ValueError, duckdb.Error, pd.errors.ParserError) as exc:
         logger.error("No se pudo completar el análisis: %s", exc)
@@ -77,7 +77,7 @@ def main() -> int:
     print(exploratory.top_customers.to_string(index=False))
     print("\nProductos más vendidos (unidades):")
     print(results.top_products.to_string(index=False))
-    logger.info("Gráfico interactivo guardado en %s", args.output)
+    logger.info("Dashboard interactivo guardado en %s", args.output)
     logger.info("Tablas CSV guardadas en %s", args.output.parent)
     return 0
 

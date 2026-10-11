@@ -66,3 +66,66 @@ def test_top_customers_returns_at_most_five() -> None:
 
     assert len(result.top_customers) == 5
     assert result.top_customers.iloc[0]["customer_id"] == "C-5"
+
+
+def test_dashboard_filter_metrics_keep_distinct_orders_and_net_revenue() -> None:
+    sales = pd.DataFrame([
+        {
+            "order_id": "ORDER-PRIVATE-1", "order_date": "2025-01-10",
+            "customer_id": "CUSTOMER-PRIVATE-1", "customer_name": "Nombre privado uno",
+            "region": "Norte", "product_id": "P-1", "product_name": "Café",
+            "category": "Alimentos", "quantity": 2, "unit_price": "10.00",
+            "discount_pct": "0.100000",
+        },
+        {
+            "order_id": "ORDER-PRIVATE-1", "order_date": "2025-01-10",
+            "customer_id": "CUSTOMER-PRIVATE-1", "customer_name": "Nombre privado uno",
+            "region": "Norte", "product_id": "P-2", "product_name": "Té",
+            "category": "Alimentos", "quantity": 1, "unit_price": "5.00",
+            "discount_pct": "0.200000",
+        },
+        {
+            "order_id": "ORDER-PRIVATE-2", "order_date": "2025-01-11",
+            "customer_id": "CUSTOMER-PRIVATE-2", "customer_name": "Nombre privado dos",
+            "region": "Norte", "product_id": "P-1", "product_name": "Café",
+            "category": "Alimentos", "quantity": 1, "unit_price": "10.00",
+            "discount_pct": "0",
+        },
+        {
+            "order_id": "ORDER-PRIVATE-3", "order_date": "2025-02-01",
+            "customer_id": "CUSTOMER-PRIVATE-3", "customer_name": "Nombre privado tres",
+            "region": "Sur", "product_id": "P-2", "product_name": "Té",
+            "category": "Alimentos", "quantity": 3, "unit_price": "0.50",
+            "discount_pct": "0.200000",
+        },
+    ])
+
+    result = analyze_exploratory_sales(validate_sales_data(sales))
+    metrics = {
+        (row["region_filter"], row["product_filter"]): row
+        for row in result.dashboard_filter_metrics
+    }
+
+    overall = metrics[(None, None)]
+    assert overall["total_revenue"] == Decimal("33.20")
+    assert overall["sale_count"] == 3
+    assert overall["average_ticket"] == Decimal("11.07")
+    assert overall["units_sold"] == 7
+
+    region = metrics[("Norte", None)]
+    assert region["total_revenue"] == Decimal("32.00")
+    assert region["sale_count"] == 2
+    assert region["average_ticket"] == Decimal("16.00")
+    assert region["units_sold"] == 4
+
+    product = metrics[(None, "P-1")]
+    assert product["total_revenue"] == Decimal("28.00")
+    assert product["sale_count"] == 2
+    assert product["average_ticket"] == Decimal("14.00")
+    assert product["units_sold"] == 3
+
+    filtered = metrics[("Norte", "P-1")]
+    assert filtered["total_revenue"] == Decimal("28.00")
+    assert filtered["sale_count"] == 2
+
+    assert ("Sur", "P-1") not in metrics

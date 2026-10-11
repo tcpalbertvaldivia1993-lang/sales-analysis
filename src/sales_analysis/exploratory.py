@@ -14,6 +14,8 @@ class ExploratoryAnalysis:
     revenue_by_region: pd.DataFrame
     sales_by_product: pd.DataFrame
     top_customers: pd.DataFrame
+    dashboard_cube: pd.DataFrame
+    dashboard_filter_metrics: tuple[dict[str, object], ...]
 
 
 def _net_revenue(quantity: int, unit_price: Decimal, discount_pct: Decimal) -> Decimal:
@@ -26,6 +28,65 @@ def _names_and_conflict(names: pd.Series) -> tuple[str, bool]:
     return " | ".join(unique_names), len(unique_names) > 1
 
 
+def _dashboard_cube(frame: pd.DataFrame, sales_by_product: pd.DataFrame) -> pd.DataFrame:
+    """Agrega ventas por mes, región y producto sin conservar identificadores de pedido."""
+    product_names = sales_by_product.set_index("product_id")["product_name"].to_dict()
+    named_frame = frame.assign(month=frame["order_date"].dt.strftime("%Y-%m"))
+    rows = []
+    for (month, region, product_id), group in named_frame.groupby(
+        ["month", "region", "product_id"], sort=True
+    ):
+        rows.append({
+            "month": str(month),
+            "region": str(region),
+            "product_id": str(product_id),
+            "product_name": str(product_names[product_id]),
+            "units_sold": int(group["quantity"].sum()),
+            "total_revenue": sum(group["net_revenue"], Decimal(0)),
+        })
+    return pd.DataFrame(
+        rows,
+        columns=[
+            "month", "region", "product_id", "product_name", "units_sold", "total_revenue",
+        ],
+    )
+
+
+def _dashboard_filter_metrics(frame: pd.DataFrame) -> tuple[dict[str, object], ...]:
+    """Calcula indicadores exactos para filtros globales, individuales y combinados."""
+    rows: list[dict[str, object]] = []
+
+    def append_metrics(
+        group: pd.DataFrame, region_filter: str | None, product_filter: str | None
+    ) -> None:
+        revenue = sum(group["net_revenue"], Decimal(0))
+        sale_count = int(group["order_id"].nunique())
+        average_ticket = (
+            (revenue / sale_count).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            if sale_count
+            else None
+        )
+        rows.append({
+            "region_filter": region_filter,
+            "product_filter": product_filter,
+            "total_revenue": revenue.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP),
+            "sale_count": sale_count,
+            "average_ticket": average_ticket,
+            "units_sold": int(group["quantity"].sum()),
+        })
+
+    append_metrics(frame, None, None)
+    for region, group in frame.groupby("region", sort=True):
+        append_metrics(group, str(region), None)
+    for product_id, group in frame.groupby("product_id", sort=True):
+        append_metrics(group, None, str(product_id))
+    for (region, product_id), group in frame.groupby(
+        ["region", "product_id"], sort=True
+    ):
+        append_metrics(group, str(region), str(product_id))
+    return tuple(rows)
+
+
 def analyze_exploratory_sales(sales: pd.DataFrame) -> ExploratoryAnalysis:
     """Calcula ingresos, agrupaciones regionales y de producto, y top clientes.
 
@@ -36,8 +97,8 @@ def analyze_exploratory_sales(sales: pd.DataFrame) -> ExploratoryAnalysis:
         raise ValueError("No hay datos para analizar.")
 
     required = {
-        "customer_id", "customer_name", "region", "product_id", "product_name",
-        "quantity", "unit_price", "discount_pct",
+        "order_id", "order_date", "customer_id", "customer_name", "region",
+        "product_id", "product_name", "quantity", "unit_price", "discount_pct",
     }
     missing = sorted(required - set(sales.columns))
     if missing:
@@ -100,10 +161,14 @@ def analyze_exploratory_sales(sales: pd.DataFrame) -> ExploratoryAnalysis:
         top_customers = pd.DataFrame(customer_rows).sort_values(
             ["total_revenue", "customer_id"], ascending=[False, True], ignore_index=True
         ).head(5)
+        dashboard_cube = _dashboard_cube(frame, sales_by_product)
+        dashboard_filter_metrics = _dashboard_filter_metrics(frame)
 
     return ExploratoryAnalysis(
         total_revenue=total_revenue,
         revenue_by_region=revenue_by_region,
         sales_by_product=sales_by_product,
         top_customers=top_customers,
+        dashboard_cube=dashboard_cube,
+        dashboard_filter_metrics=dashboard_filter_metrics,
     )

@@ -27,7 +27,7 @@ El flujo principal se ejecuta desde `main.py` y:
 2. Calcula los ingresos netos, el número de pedidos y el ticket promedio.
 3. Agrupa ingresos por región y por producto, y presenta los cinco clientes con mayor gasto neto.
 4. Calcula ventas por mes y genera un ranking de productos por unidades e ingresos.
-5. Exporta un gráfico interactivo de ingresos netos mensuales.
+5. Genera un dashboard HTML autocontenido con filtros interactivos por región y producto, tarjetas KPI y gráficos comparativos.
 6. Exporta a CSV los ingresos por región, las métricas por producto y los cinco clientes con mayor gasto neto.
 
 El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios nombres, los presenta juntos y marca la inconsistencia.
@@ -52,7 +52,7 @@ El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios
 │   ├── exploratory.py        # agrupaciones con pandas
 │   ├── exporting.py          # exportación de resultados exploratorios a CSV
 │   ├── duckdb_analysis.py    # métricas y consultas DuckDB
-│   ├── visualization.py      # gráfico HTML con Plotly
+│   ├── visualization.py      # dashboard HTML interactivo con Plotly
 │   ├── database.py           # conexión y carga para el prototipo SQLite
 │   ├── cli.py                # comandos del prototipo SQLite
 │   └── reporting.py          # resumen CSV del prototipo SQLite
@@ -118,13 +118,13 @@ python main.py --csv "/ruta/ventas.csv"
 
 Si el CSV está en `data/raw/ventas_demo.csv`, también puedes ejecutar `python main.py` sin indicar `--csv`. Si ese archivo predeterminado no existe, el programa registra un error indicando que no encontró el CSV y termina con código 1. No descarga ni crea datos automáticamente.
 
-El destino predeterminado del gráfico es:
+El destino predeterminado del dashboard es:
 
 ```text
 reports/analisis_ventas_dashboard.html
 ```
 
-La carpeta `reports/` se crea si no existe. Puedes cambiar el destino con `--output`, siempre que termine en `.html` y no coincida con la ruta del CSV.
+El dashboard es un archivo HTML autocontenido e incluye Plotly para funcionar sin conexión a Internet. Sus filtros de región y producto actualizan los indicadores de ingresos netos, pedidos distintos, ticket promedio y unidades vendidas, junto con las comparaciones por mes, región y producto. La carpeta `reports/` se crea si no existe. Puedes cambiar el destino con `--output`, siempre que termine en `.html` y no coincida con la ruta del CSV.
 El programa guarda también estos tres archivos CSV en el mismo directorio que el HTML:
 
 - `ventas_por_region.csv`: ingresos netos agrupados por región.
@@ -171,13 +171,15 @@ Con el entorno virtual activado y desde la raíz del proyecto:
 python -m pytest -v
 ```
 
-Las pruebas comprueban la validación de datos y límites numéricos, las métricas y agrupaciones, las consultas y el ranking de DuckDB, y las condiciones de salida, generación del HTML y exportación de los CSV.
+Las pruebas comprueban la validación de datos y límites numéricos, las métricas y agrupaciones, las consultas y el ranking de DuckDB, y las condiciones de salida, dashboard HTML, filtros agregados, privacidad y exportación de los CSV.
 
 ## Resultados y dashboard
 
-Al terminar, el programa imprime en la terminal métricas generales, ingresos por región y producto, los cinco clientes con mayor gasto y el ranking de productos. También guarda un gráfico de líneas interactivo con los ingresos netos por mes y tres tablas CSV con los principales resultados exploratorios.
+Al terminar, el programa imprime en la terminal métricas generales, ingresos por región y producto, los cinco clientes con mayor gasto y el ranking de productos. También guarda el dashboard HTML y tres tablas CSV con los principales resultados exploratorios.
 
-El dashboard contiene ese gráfico mensual; no es un panel con filtros ni incluye las tablas impresas en la terminal. El HTML y los CSV se generan localmente dentro de `reports/` (o junto al HTML si se indica otro destino) y no se incluyen en el repositorio. No se presentan cifras ni capturas en este README.
+El dashboard incluye una serie de ingresos netos mensuales y gráficos comparativos por región y producto. Los selectores actualizan los cuatro indicadores y las tres visualizaciones. Los pedidos se cuentan de forma distinta después de aplicar ambos filtros, incluso si un pedido incluye varios productos. El HTML contiene agregados por mes, región y producto; no incrusta filas de ventas, nombres o identificadores de clientes ni identificadores de pedidos. Los importes no llevan símbolo de moneda porque el CSV no incluye una columna de moneda.
+
+El HTML y los CSV se generan localmente dentro de `reports/` (o junto al HTML si se indica otro destino) y no se incluyen en el repositorio. No se presentan cifras ni capturas en este README.
 
 ## Formato de entrada
 
@@ -194,7 +196,7 @@ Los ingresos netos se calculan como cantidad × precio unitario × (1 − descue
 ## Limitaciones y mejoras futuras
 
 - El análisis depende de que el CSV tenga las columnas y los tipos de datos esperados.
-- El gráfico actual muestra ingresos mensuales y no permite filtrar ni explorar los grupos desde el navegador.
+- Los filtros actuales se limitan a una región y un producto cada vez; no incluyen periodo, categoría ni selección múltiple.
 - No se modelan impuestos, envío, devoluciones ni otros ajustes contables.
 - Los módulos SQLite son un prototipo independiente y no están integrados en el flujo principal.
 
