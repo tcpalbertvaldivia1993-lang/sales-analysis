@@ -1,0 +1,31 @@
+__pycache__/
+.pytest_cache/
+*.py[cod]
+.venv/
+venv/
+
+# Archivos temporales y de editor
+*.tmp
+*.swp
+*~
+
+# Variables de entorno, credenciales, claves y tokens
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.token
+*credentials*
+*secret*
+
+# Datos que no se deben publicar
+data/raw/ventas_demo.csv
+data/processed/*
+!data/processed/.gitkeep
+
+# Informes generados
+reports/*
+!reports/.gitkeep
