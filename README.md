@@ -1,6 +1,6 @@
 # Análisis de ventas con Python y SQL
 
-Proyecto de portafolio que procesa un archivo CSV de ventas, valida sus datos y genera métricas y agrupaciones con Python, pandas y DuckDB. También exporta un gráfico interactivo de ingresos netos mensuales como archivo HTML.
+Proyecto de portafolio que procesa un archivo CSV de ventas, valida sus datos y genera métricas y agrupaciones con Python, pandas y DuckDB. Incluye un dashboard interactivo autocontenido en HTML y una aplicación web con Streamlit.
 
 ## Objetivo
 
@@ -13,9 +13,10 @@ El proyecto muestra un flujo de análisis desde un CSV hasta resultados resumido
 - **DuckDB:** ejecución de consultas analíticas sobre los datos cargados en memoria.
 - **SQL:** definición de las consultas de resumen, ventas mensuales y ranking de productos.
 - **Plotly:** generación del gráfico interactivo en HTML.
+- **Streamlit:** aplicación web para cargar CSV, explorar el dashboard y descargar resultados agregados.
 - **pytest:** pruebas de validación, cálculos, consultas y salida HTML.
 
-Las dependencias directas están declaradas en `requirements.txt`; `requirements-lock.txt` contiene versiones fijadas para reproducir el entorno congelado del proyecto.
+Las dependencias directas están declaradas en `requirements.txt`; `requirements-lock.txt` fija las versiones del entorno, incluida Streamlit.
 
 El código requiere Python 3.10 o superior por la sintaxis de anotaciones de tipos utilizada. Para instalar las versiones exactas de `requirements-lock.txt`, se requiere Python 3.11 o superior. El entorno fijado se verificó con Python 3.14.4, pero esa versión concreta no es obligatoria.
 
@@ -37,6 +38,7 @@ El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios
 ```text
 .
 ├── main.py
+├── streamlit_app.py         # interfaz web independiente
 ├── requirements.txt
 ├── requirements-lock.txt
 ├── data/
@@ -59,7 +61,8 @@ El ranking agrupa por `product_id`. Si un mismo identificador aparece con varios
 └── tests/
     ├── test_main.py
     ├── test_sales_analysis.py
-    └── test_exploratory.py
+    ├── test_exploratory.py
+    └── test_streamlit_app.py
 ```
 
 Los módulos SQLite se conservan como prototipo separado. No forman parte del flujo ejecutado por `main.py`.
@@ -172,6 +175,30 @@ python -m pytest -v
 ```
 
 Las pruebas comprueban la validación de datos y límites numéricos, las métricas y agrupaciones, las consultas y el ranking de DuckDB, y las condiciones de salida, dashboard HTML, filtros agregados, privacidad y exportación de los CSV.
+
+## Aplicación web con Streamlit
+
+La aplicación web es independiente del flujo local y no necesita que exista `data/raw/ventas_demo.csv`. Desde la raíz del proyecto y con el entorno virtual activado, ejecuta:
+
+```bash
+streamlit run streamlit_app.py
+```
+
+Carga un CSV con el formato indicado abajo y pulsa **Analizar ventas**. La pestaña del dashboard conserva los filtros, indicadores y gráficos interactivos. La pestaña de resultados permite descargar los ingresos por región y las métricas por producto. No ofrece el informe de los cinco clientes porque contiene nombres e identificadores; la exportación local de `main.py` se mantiene sin cambios.
+
+La app procesa la carga en memoria y usa un directorio temporal para generar el HTML, que se elimina al terminar la preparación. No escribe informes ni datos procesados en `reports/`. Las cifras no muestran símbolo de moneda. No cargues datos reales o personales en una aplicación pública.
+
+### Publicar en Streamlit Community Cloud
+
+La publicación requiere que el código esté en un repositorio de GitHub accesible para tu cuenta de Streamlit. Estos cambios no publican el repositorio ni la aplicación automáticamente.
+
+1. Revisa el repositorio y confirma que no contenga CSV reales, secretos, credenciales ni informes generados. `data/raw/ventas_demo.csv` y `reports/` están excluidos por `.gitignore`.
+2. Guarda los cambios y publícalos en GitHub desde tu propio flujo de revisión. No incluyas datos de ventas reales.
+3. Inicia sesión en [Streamlit Community Cloud](https://share.streamlit.io/) con GitHub y crea una aplicación nueva.
+4. Selecciona el repositorio, la rama y `streamlit_app.py` como archivo principal. El entorno instala las dependencias desde `requirements.txt`.
+5. Selecciona Python 3.11 o superior y despliega. Después, abre el enlace asignado y prueba una carga ficticia antes de compartirlo.
+
+Community Cloud ejecuta la app desde un repositorio GitHub y requiere acceso a ese repositorio. Los archivos que la aplicación escribe en el entorno alojado no deben tratarse como almacenamiento persistente; esta app presenta las descargas a partir de resultados generados en memoria.
 
 ## Resultados y dashboard
 
